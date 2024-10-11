@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Seat Reservation</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* General Page Styles */
+        body {
+            font-family: 'Times New Roman', Georgia, serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #6a1b9a;
+            color: white;
+        }
+        
+        .seat-container, .reservation-form-container {
+            margin-top: 20px;
+            color: white;
+        }
+        
+        .seat-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .reservation-form-container.hidden {
+            display: none;
+        }
+        
+        .row {
+            display: flex;
+            margin: 15px 0;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            max-width: 1000px;
+            position: relative;
+        }
+        
+        /* Seat Styles */
+        .seat {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            background: brown;
+            color: black;
+            margin: 2px;
+            text-align: center;
+            line-height: 30px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        .seat.reserved {
+            background: grey;
+            cursor: not-allowed;
+        }
+        
+        .seat.selected {
+            background: lightblue;
+        }
+        
+        /* Couch Styles */
+        .couch {
+            display: flex;
+            align-items: center;
+            margin: 10px 20px;
+            position: relative;
+        }
+        
+        .couch-backrest {
+            width: 100%;
+            height: 10px;
+            background-color: green;
+            position: absolute;
+            top: -10px;
+        }
+        
+        .couch-armrest {
+            width: 10px;
+            height: calc(100% - 4px);
+            position: absolute;
+        }
+        
+        .couch-armrest.left {
+            left: -12px;
+        }
+        
+        .couch-armrest.right {
+            right: -12px;
+        }
+        
+        /* Chair Styles */
+        .highlight-left {
+            margin-right: 20px;
+            position: relative;
+        }
+        
+        .highlight-right {
+            margin-left: 20px;
+            position: relative;
+        }
+        
+        /* Reservation Modal Styles */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            background-color: rgba(0, 0, 0, 0.5); /* Black w/ opacity */
+            justify-content: center;
+            align-items: center;
+            overflow: auto;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            padding: 20px;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+            color: black;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+        }
+        
+        /* Form Styles */
+        #reservation-form label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        #reservation-form input {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        #reservation-form button {
+            padding: 10px 20px;
+            margin-top: 10px;
+            background-color: #6a1b9a;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        #reservation-form button:hover {
+            background-color: #5a1486;
+        }
+        
+        /* Legend and User Controls */
+        .legend {
+            margin-top: 20px;
+            text-align: center;
+            color: white;
+        }
+
+        .legend span {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            margin: 0 10px;
+            vertical-align: middle;
+        }
+
+        .user-controls {
+            margin-top: 20px;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <!-- Reservation Modal -->
+    <div id="reservationModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeReservationForm()">&times;</span>
+            <h2>Geben Sie Ihre Adresse ein</h2>
+            <form id="reservation-form">
+                <label for="first-name">Vorname:</label>
+                <input type="text" id="first-name" required>
+                <label for="last-name">Nachname:</label>
+                <input type="text" id="last-name" required>
+                <label for="place">Ort:</label>
+                <input type="text" id="place" required>
+                <label for="phone">Mobile:</label>
+                <input type="text" id="phone" required>
+                <label for="mail">E-Mail:</label>
+                <input type="text" id="mail" required>
+                <button type="submit">verbindlich reservieren</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Seating Area -->
+    <div class="seat-container">
+        <h2>Sofa-Theater Reservation 13.01.25</h2>
+        <div id="seating-area"></div>
+        
+        <!-- Legend for the seats -->
+        <div class="legend">
+            <span style="background: linear-gradient(to right, #FF0000, #8bc34a, #212121, #f9fbe7, #fb8c00);"></span> Sofa-Platz
+            <span style="background-color: lightblue;"></span> ausgewählter Platz
+            <span style="background-color: grey;"></span> reservierte Plätze
+            <span style="background-color: brown;"></span> Stühle
+        </div>
+        
+        <!-- Reservation Button -->
+        <div class="user-controls">
+            <button onclick="toggleReservationForm()">Reservieren</button>
+        </div>
+    </div>
+	<div class="reservation-notice">
+        <p style="color: white; margin-top: 10px;">*Ihre Reservation ist erst gültig, sobald Sie eine Bestätigungs-E-Mail von uns erhalten haben.</p>
+	</div>
+
+    <script>
+        const seatingArea = document.getElementById('seating-area');
+        let reservations = [];
+        let couchColors = [
+            '#8bc34a', '#212121', '#ffffff', '#FF0000', '#FF0000', '#ffffff', '#8bc34a', '#fb8c00', '#fb8c00', '#FF0000', '#212121', '#8bc34a', '#212121', '#fb8c00', '#ffffff', '#FF0000', '#fb8c00', '#FF0000', '#212121', '#ffffff', '#FF0000', '#212121', '#8bc34a', '#fb8c00', '#ffffff', '#8bc34a', '#fb8c00', '#212121', '#212121', '#fb8c00', '#FF0000', '#ffffff', '#8bc34a', '#212121', '#ffffff', '#8bc34a', '#fb8c00'
+        ];
+        let currentCouchIndex = 0;
+		let currentSeatNumber = 1;
+
+        // Function to create seats in the seating area
+        function createSeats() {
+            seatingArea.innerHTML = '';
+            const rows = [
+                [3, 2, 2, 2], // Rows and seat grouping
+                [3, 2, 2, 2],
+                [2, 2, 3, 2],
+                [2, 2, 2, 3],
+                [2, 2, 2, 3],
+                [2, 2, 2, 3],
+                [3, 2, 2, 2],
+                [2, 3, 2, 2],
+                [2, 2, 2, 3, 3]
+            ];
+            
+            const seatElements = [];
+            const rightChairElements = [];
+            const leftChairElements = [];
+
+            rows.forEach((groupSizes, rowIndex) => {
+                const rowDiv = document.createElement('div');
+                rowDiv.classList.add('row');
+
+                // Add row label (Row numbers)
+                const rowNumberDiv = document.createElement('div');
+                rowNumberDiv.textContent = `Row ${rowIndex + 1}`;
+                rowNumberDiv.style.color = 'white';
+                rowNumberDiv.style.marginRight = '20px';
+                rowDiv.appendChild(rowNumberDiv);
+
+                // Add left chair (excluding topmost row)
+                if (rowIndex !== rows.length - 1) {
+                    const leftChair = createChair('left');
+                    rowDiv.appendChild(leftChair);
+                    leftChairElements.push(leftChair);
+                }
+
+                // Create couch groups
+                groupSizes.forEach((groupSize) => {
+                    const couchDiv = createCouch(groupSize);
+                    rowDiv.appendChild(couchDiv);
+                    seatElements.push(...Array.from(couchDiv.querySelectorAll('.seat')));
+                });
+
+                // Add right chair (excluding topmost row)
+                if (rowIndex !== rows.length - 1) {
+                    const rightChair = createChair('right');
+                    rowDiv.appendChild(rightChair);
+                    rightChairElements.push(rightChair);
+                }
+
+                seatingArea.prepend(rowDiv); // Ensure bottom-to-top rendering
+            });
+
+            // Number the chairs and seats
+            let chairNumber = 1;
+            rightChairElements.forEach(chair => chair.textContent = `St${chairNumber++}`);
+            leftChairElements.forEach(chair => chair.textContent = `St${chairNumber++}`);
+            let seatNumber = 1;
+            seatElements.forEach(seat => seat.textContent = seatNumber++);
+        }
+
+        // Function to create a chair
+        function createChair(side) {
+            const chair = document.createElement('div');
+            chair.classList.add('seat', `highlight-${side}`);
+            chair.setAttribute('title', 'Stuhl');
+            chair.setAttribute('data-seat-number', `St${currentSeatNumber++}`); 
+
+            chair.addEventListener('click', () => toggleSeatSelection(chair));
+
+            const backrest = document.createElement('div');
+            backrest.classList.add('chair-backrest');
+            chair.appendChild(backrest);
+
+            const armrestLeft = document.createElement('div');
+            armrestLeft.classList.add('chair-armrest', 'left');
+            chair.appendChild(armrestLeft);
+
+            const armrestRight = document.createElement('div');
+            armrestRight.classList.add('chair-armrest', 'right');
+            chair.appendChild(armrestRight);
+
+            return chair;
+        }
+
+        // Function to create a couch group
+        function createCouch(groupSize) {
+            const couchDiv = document.createElement('div');
+            couchDiv.classList.add('couch');
+            couchDiv.setAttribute('title', `${groupSize}er Sofa`);
+
+            const backrest = document.createElement('div');
+            backrest.classList.add('couch-backrest');
+            backrest.style.backgroundColor = getCouchColor();
+            couchDiv.appendChild(backrest);
+
+            for (let i = 0; i < groupSize; i++) {
+                const seat = document.createElement('div');
+                seat.classList.add('seat');
+                seat.setAttribute('data-seat-number', currentSeatNumber++);
+                seat.style.backgroundColor = backrest.style.backgroundColor;
+                seat.addEventListener('click', () => toggleCouchSelection(couchDiv));
+                couchDiv.appendChild(seat);
+            }
+
+            const leftArmrest = document.createElement('div');
+            leftArmrest.classList.add('couch-armrest', 'left');
+            leftArmrest.style.backgroundColor = backrest.style.backgroundColor;
+            couchDiv.appendChild(leftArmrest);
+
+            const rightArmrest = document.createElement('div');
+            rightArmrest.classList.add('couch-armrest', 'right');
+            rightArmrest.style.backgroundColor = backrest.style.backgroundColor;
+            couchDiv.appendChild(rightArmrest);
+
+            return couchDiv;
+        }
+
+        // Function to get the color of the couch
+        function getCouchColor() {
+            const color = couchColors[currentCouchIndex % couchColors.length];
+            currentCouchIndex++;
+            return color;
+        }
+
+        // Function to toggle seat selection
+        function toggleSeatSelection(seat) {
+            if (seat.classList.contains('reserved')) return;
+            seat.classList.toggle('selected');
+        }
+
+        // Function to toggle couch selection
+        function toggleCouchSelection(couchDiv) {
+            const seats = couchDiv.querySelectorAll('.seat');
+            const allSelected = Array.from(seats).every(seat => seat.classList.contains('selected'));
+            seats.forEach(seat => {
+                if (!seat.classList.contains('reserved')) {
+                    if (allSelected) {
+                        seat.classList.remove('selected');
+                    } else {
+                        seat.classList.add('selected');
+                    }
+                    seat.style.backgroundColor = seat.classList.contains('selected') ? 'lightblue' : seat.parentNode.querySelector('.couch-backrest').style.backgroundColor;
+                }
+            });
+        }
+
+        // Functions to handle reservation modal visibility
+        function toggleReservationForm() {
+            const selectedSeats = document.querySelectorAll('.seat.selected');
+
+            if (selectedSeats.length === 0) {
+                displayError('Bitte wählen Sie mindestens einen Platz aus, bevor Sie fortfahren.');
+                return;
+            }
+            const modal = document.getElementById('reservationModal');
+            modal.style.display = 'flex';
+        }
+        
+        function displayError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.classList.add('error-message');
+            errorDiv.textContent = message;
+
+            // Style error message
+            errorDiv.style.position = 'fixed';
+            errorDiv.style.top = '20px';
+            errorDiv.style.right = '20px';
+            errorDiv.style.backgroundColor = 'red';
+            errorDiv.style.color = 'white';
+            errorDiv.style.padding = '15px';
+            errorDiv.style.borderRadius = '5px';
+            errorDiv.style.boxShadow = '0 2px 5px rgba(0,0,0,0.3)';
+            errorDiv.style.zIndex = '2';
+
+            document.body.appendChild(errorDiv);
+
+            // Remove error message after 5 seconds
+            setTimeout(() => {
+                errorDiv.remove();
+            }, 10000);
+        }    
+
+        function closeReservationForm() {
+            const modal = document.getElementById('reservationModal');
+            modal.style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('reservationModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        // Handle form submission and seat reservation
+        document.getElementById('reservation-form').addEventListener('submit', function (e) {
+            e.preventDefault();
+            
+            const selectedSeats = document.querySelectorAll('.seat.selected');
+            const seatNumbers = Array.from(selectedSeats).map(seat => seat.textContent);
+
+            // Mark the selected seats as reserved
+            selectedSeats.forEach(seat => {
+                seat.classList.remove('selected');
+                seat.classList.add('reserved');
+                seat.style.backgroundColor = 'grey';
+            });
+            
+            const allCouches = document.querySelectorAll('.couch');
+            allCouches.forEach(couch => {
+                const seats = couch.querySelectorAll('.seat');
+                const allReserved = Array.from(seats).every(seat => seat.classList.contains('reserved'));
+
+                if (allReserved) {
+                    // Mark the backrest and armrests as grey
+                    const backrest = couch.querySelector('.couch-backrest');
+                    const leftArmrest = couch.querySelector('.couch-armrest.left');
+                    const rightArmrest = couch.querySelector('.couch-armrest.right');
+                
+                    if (backrest) backrest.style.backgroundColor = 'grey';
+                    if (leftArmrest) leftArmrest.style.backgroundColor = 'grey';
+                    if (rightArmrest) rightArmrest.style.backgroundColor = 'grey';
+                }
+            });
+
+            closeReservationForm();
+            displayConfirmation('Vielen Dank! Ihre Reservation ist bei uns eingegangen. Sobald diese Engetragen ist erhalten Sie von uns eine Bestätigungs-Mail.');
+        });
+        
+        // Function to display confirmation message
+        function displayConfirmation(message) {
+            const confirmationDiv = document.createElement('div');
+            confirmationDiv.classList.add('confirmation-message');
+            confirmationDiv.textContent = message;
+
+            // Style confirmation message
+            confirmationDiv.style.position = 'fixed';
+            confirmationDiv.style.bottom = '20px';
+            confirmationDiv.style.right = '20px';
+            confirmationDiv.style.backgroundColor = '#e1bee7';
+            confirmationDiv.style.color = 'black';
+            confirmationDiv.style.padding = '15px';
+            confirmationDiv.style.borderRadius = '5px';
+            confirmationDiv.style.boxShadow = '0 2px 5px rgba(0,0,0,0.3)';
+            confirmationDiv.style.zIndex = '2';
+
+            document.body.appendChild(confirmationDiv);
+
+            // Remove confirmation message after 5 seconds
+            setTimeout(() => {
+                confirmationDiv.remove();
+            }, 10000);
+        }
+
+        // Initialize seat layout
+        createSeats();
+    </script>  
+</body>
+</html>
