@@ -13,12 +13,12 @@
             flex-direction: column;
             align-items: center;
             background-color: #dfdbe9;
-            color: white;
+            color: black;
         }
         
         .seat-container, .reservation-form-container {
             margin-top: 20px;
-            color: white;
+            color: black;
         }
         
         .seat-container {
@@ -56,7 +56,7 @@
         }
         
         .seat.reserved {
-            background: grey;
+            background: #6a1b9a;
             cursor: not-allowed;
         }
         
@@ -177,7 +177,7 @@
         .legend {
             margin-top: 20px;
             text-align: center;
-            color: white;
+            color: black;
         }
 
         .legend span {
@@ -225,7 +225,7 @@
         <div class="legend">
             <span style="background: linear-gradient(to right, #FF0000, #8bc34a, #212121, #f9fbe7, #fb8c00);"></span> Sofa-Platz
             <span style="background-color: lightblue;"></span> ausgewählter Platz
-            <span style="background-color: grey;"></span> reservierte Plätze
+            <span style="background-color: #6a1b9a;"></span> reservierte Plätze
             <span style="background-color: brown;"></span> Stühle
         </div>
         
@@ -235,14 +235,14 @@
         </div>
     </div>
 	<div class="reservation-notice">
-        <p style="color: white; margin-top: 10px;">*Ihre Reservation ist erst gültig, sobald Sie eine Bestätigungs-E-Mail von uns erhalten haben.</p>
+        <p style="color: black; margin-top: 10px;">*Ihre Reservation ist erst gültig, sobald Sie eine Bestätigungs-E-Mail von uns erhalten haben.</p>
 	</div>
 
     <script>
         const seatingArea = document.getElementById('seating-area');
         let reservations = [];
         let couchColors = [
-            '#8bc34a', '#212121', '#ffffff', '#FF0000', '#FF0000', '#ffffff', '#8bc34a', '#fb8c00', '#fb8c00', '#FF0000', '#212121', '#8bc34a', '#212121', '#fb8c00', '#ffffff', '#FF0000', '#fb8c00', '#FF0000', '#212121', '#ffffff', '#FF0000', '#212121', '#8bc34a', '#fb8c00', '#ffffff', '#8bc34a', '#fb8c00', '#212121', '#212121', '#fb8c00', '#FF0000', '#ffffff', '#8bc34a', '#212121', '#ffffff', '#8bc34a', '#fb8c00'
+            '#8bc34a', '#444444', '#ffffff', '#FF0000', '#FF0000', '#ffffff', '#8bc34a', '#fb8c00', '#fb8c00', '#FF0000', '#444444', '#8bc34a', '#444444', '#fb8c00', '#ffffff', '#FF0000', '#fb8c00', '#FF0000', '#444444', '#ffffff', '#FF0000', '#444444', '#8bc34a', '#fb8c00', '#ffffff', '#8bc34a', '#fb8c00', '#444444', '#444444', '#fb8c00', '#FF0000', '#ffffff', '#8bc34a', '#444444', '#ffffff', '#8bc34a', '#fb8c00'
         ];
         let currentCouchIndex = 0;
 		let currentSeatNumber = 1;
@@ -273,7 +273,7 @@
                 // Add row label (Row numbers)
                 const rowNumberDiv = document.createElement('div');
                 rowNumberDiv.textContent = `Row ${rowIndex + 1}`;
-                rowNumberDiv.style.color = 'white';
+                rowNumberDiv.style.color = 'black';
                 rowNumberDiv.style.marginRight = '20px';
                 rowDiv.appendChild(rowNumberDiv);
 
@@ -454,7 +454,7 @@
             selectedSeats.forEach(seat => {
                 seat.classList.remove('selected');
                 seat.classList.add('reserved');
-                seat.style.backgroundColor = 'grey';
+                seat.style.backgroundColor = '#6a1b9a';
             });
             
             const allCouches = document.querySelectorAll('.couch');
@@ -468,9 +468,9 @@
                     const leftArmrest = couch.querySelector('.couch-armrest.left');
                     const rightArmrest = couch.querySelector('.couch-armrest.right');
                 
-                    if (backrest) backrest.style.backgroundColor = 'grey';
-                    if (leftArmrest) leftArmrest.style.backgroundColor = 'grey';
-                    if (rightArmrest) rightArmrest.style.backgroundColor = 'grey';
+                    if (backrest) backrest.style.backgroundColor = '#6a1b9a';
+                    if (leftArmrest) leftArmrest.style.backgroundColor = '#6a1b9a';
+                    if (rightArmrest) rightArmrest.style.backgroundColor = '#6a1b9a';
                 }
             });
 
