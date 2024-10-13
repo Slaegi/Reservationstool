@@ -242,11 +242,15 @@
     const seatingArea = document.getElementById('seating-area');
     let currentCouchIndex = 0;
     let currentSeatNumber = 1;
+    let couchColors = [
+        '#8bc34a', '#444444', '#ffffff', '#FF0000', '#FF0000', '#ffffff', '#8bc34a', '#fb8c00', '#fb8c00', '#FF0000', '#444444', '#8bc34a', '#444444', '#fb8c00', '#ffffff', '#FF0000', '#fb8c00', '#FF0000', '#444444', '#ffffff', '#FF0000', '#444444', '#8bc34a', '#fb8c00', '#ffffff', '#8bc34a', '#fb8c00', '#444444', '#444444', '#fb8c00', '#FF0000', '#ffffff', '#8bc34a', '#444444', '#ffffff', '#8bc34a', '#fb8c00'
+    ];
 
+    // Function to create seats in the seating area
     function createSeats() {
         seatingArea.innerHTML = '';
         const rows = [
-            [3, 2, 2, 2], 
+            [3, 2, 2, 2], // Rows and seat grouping
             [3, 2, 2, 2],
             [2, 2, 3, 2],
             [2, 2, 2, 3],
@@ -256,61 +260,54 @@
             [2, 3, 2, 2],
             [2, 2, 2, 3, 3]
         ];
-        
-        const seatElements = [];
-        const rightChairElements = [];
-        const leftChairElements = [];
 
         rows.forEach((groupSizes, rowIndex) => {
             const rowDiv = document.createElement('div');
             rowDiv.classList.add('row');
 
+            // Add row label (Row numbers)
             const rowNumberDiv = document.createElement('div');
             rowNumberDiv.textContent = `Row ${rowIndex + 1}`;
             rowNumberDiv.style.color = 'black';
             rowNumberDiv.style.marginRight = '20px';
             rowDiv.appendChild(rowNumberDiv);
 
+            // Add left chair (excluding topmost row)
             if (rowIndex !== rows.length - 1) {
                 const leftChair = createChair('left');
                 rowDiv.appendChild(leftChair);
-                leftChairElements.push(leftChair);
             }
 
+            // Create couch groups
             groupSizes.forEach((groupSize) => {
                 const couchDiv = createCouch(groupSize);
                 rowDiv.appendChild(couchDiv);
-                seatElements.push(...Array.from(couchDiv.querySelectorAll('.seat')));
             });
 
+            // Add right chair (excluding topmost row)
             if (rowIndex !== rows.length - 1) {
                 const rightChair = createChair('right');
                 rowDiv.appendChild(rightChair);
-                rightChairElements.push(rightChair);
             }
 
-            seatingArea.prepend(rowDiv); 
+            seatingArea.appendChild(rowDiv); // Append rows in the correct order
         });
 
-        let chairNumber = 1;
-        rightChairElements.forEach(chair => chair.textContent = `St${chairNumber++}`);
-        leftChairElements.forEach(chair => chair.textContent = `St${chairNumber++}`);
-        let seatNumber = 1;
-        seatElements.forEach(seat => seat.textContent = seatNumber++);
-        
-        loadReservations();
+        loadReservations(); // Load reservations after creating all seats
     }
 
+    // Function to create a chair
     function createChair(side) {
         const chair = document.createElement('div');
         chair.classList.add('seat', `highlight-${side}`);
         chair.setAttribute('title', 'Stuhl');
-        chair.setAttribute('data-seat-number', `St${currentSeatNumber++}`); 
+        chair.setAttribute('data-seat-number', `St${currentSeatNumber++}`);
 
         chair.addEventListener('click', () => toggleSeatSelection(chair));
         return chair;
     }
 
+    // Function to create a couch group
     function createCouch(groupSize) {
         const couchDiv = document.createElement('div');
         couchDiv.classList.add('couch');
@@ -330,15 +327,27 @@
             couchDiv.appendChild(seat);
         }
 
+        const leftArmrest = document.createElement('div');
+        leftArmrest.classList.add('couch-armrest', 'left');
+        leftArmrest.style.backgroundColor = backrest.style.backgroundColor;
+        couchDiv.appendChild(leftArmrest);
+
+        const rightArmrest = document.createElement('div');
+        rightArmrest.classList.add('couch-armrest', 'right');
+        rightArmrest.style.backgroundColor = backrest.style.backgroundColor;
+        couchDiv.appendChild(rightArmrest);
+
         return couchDiv;
     }
 
+    // Function to get the color of the couch
     function getCouchColor() {
         const color = couchColors[currentCouchIndex % couchColors.length];
         currentCouchIndex++;
         return color;
     }
 
+    // Function to toggle seat selection
     function toggleSeatSelection(seat) {
         if (seat.classList.contains('reserved')) {
             alert('Dieser Platz ist bereits reserviert.');
@@ -348,10 +357,11 @@
         saveReservations();
     }
 
+    // Functions to save and load reservations
     function saveReservations() {
         const reservedSeats = [];
         const selectedSeats = [];
-        
+
         document.querySelectorAll('.seat.reserved').forEach(seat => reservedSeats.push(seat.getAttribute('data-seat-number')));
         document.querySelectorAll('.seat.selected').forEach(seat => selectedSeats.push(seat.getAttribute('data-seat-number')));
 
@@ -380,19 +390,20 @@
         });
     }
 
+    // Initialize seat layout on page load
     window.onload = createSeats;
 
     document.getElementById('reservation-form').addEventListener('submit', function (e) {
         e.preventDefault();
-        
+
         const selectedSeats = document.querySelectorAll('.seat.selected');
         selectedSeats.forEach(seat => {
             seat.classList.remove('selected');
             seat.classList.add('reserved');
             seat.style.backgroundColor = '#6a1b9a';
         });
-        
-        saveReservations(); 
+
+        saveReservations(); // Save reservations after confirming
         closeReservationForm();
         displayConfirmation('Vielen Dank! Ihre Reservation ist bei uns eingegangen.');
     });
@@ -405,6 +416,7 @@
         alert(message);
     }
 </script>
+
 
   
 </body>
