@@ -239,77 +239,7 @@
 	</div>
 
     <script>
-	function reserveSeat(seatNumber, reservedBy) {
-  fetch('/api/reservations', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ seatNumber, reservedBy })
-  })
-  .then(response => response.json())
-  .then(data => {
-    if (data.error) {
-      alert(data.error);
-    } else {
-      const seat = document.querySelector(`#seat-${seatNumber}`);
-      seat.classList.add('reserved');
-    }
-  });
-}
-
-        fetch('/api/reservations')
-  	.then(response => response.json())
-  	.then(data => {
-    	data.forEach(reservation => {
-      	const seat = document.querySelector(`#seat-${reservation.seatNumber}`);
-      	seat.classList.add('reserved');
-    		});
-  	});
-
-	const XLSX = require('xlsx');
-	const seatingArea = document.getElementById('seating-area');
-	const express = require('express');
-	const mongoose = require('mongoose');
-	const cors = require('cors');
-	const app = express();
-	app.use(cors());
-	app.use(express.json())
-	mongoose.connect(mongodb://localhost:27017, {
-  	useNewUrlParser: true,
-  	useUnifiedTopology: true
-	}).then(() => {
-	console.log('Connected to MongoDB');
-	}).catch(err => {
-	console.error('MongoDB connection error', err);
-	});
-	const PORT = process.env.PORT || 5000;
-	app.listen(PORT, () => {
-  	console.log(`Server is running on port ${PORT}`);
-	});
-	app.get('/api/reservations/export', async (req, res) => {
-  try {
-    const reservations = await Reservation.find();
-    
-    const worksheet = XLSX.utils.json_to_sheet(reservations.map(r => ({
-      seatNumber: r.seatNumber,
-      reservedBy: r.reservedBy,
-      timestamp: r.timestamp
-    })));
-    
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Reservations");
-
-    // Create a buffer for the Excel file
-    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' });
-
-    res.setHeader('Content-Disposition', 'attachment; filename=reservations.xlsx');
-    res.setHeader('Content-Type', 'application/octet-stream');
-    res.send(excelBuffer);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});    
+	const seatingArea = document.getElementById('seating-area');  
         let reservations = [];
         let couchColors = [
             '#8bc34a', '#444444', '#ffffff', '#FF0000', '#FF0000', '#ffffff', '#8bc34a', '#fb8c00', '#fb8c00', '#FF0000', '#444444', '#8bc34a', '#444444', '#fb8c00', '#ffffff', '#FF0000', '#fb8c00', '#FF0000', '#444444', '#ffffff', '#FF0000', '#444444', '#8bc34a', '#fb8c00', '#ffffff', '#8bc34a', '#fb8c00', '#444444', '#444444', '#fb8c00', '#FF0000', '#ffffff', '#8bc34a', '#444444', '#ffffff', '#8bc34a', '#fb8c00'
