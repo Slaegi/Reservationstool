@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -15,18 +16,23 @@
             background-color: #dfdbe9;
             color: black;
         }
-        
-        .seat-container, .reservation-form-container {
+
+        .seat-container,
+        .reservation-form-container {
             margin-top: 20px;
             color: black;
         }
-        
+
         .seat-container {
             display: flex;
             flex-direction: column;
             align-items: center;
         }
-        
+
+        .reservation-form-container.hidden {
+            display: none;
+        }
+
         .row {
             display: flex;
             margin: 15px 0;
@@ -36,7 +42,7 @@
             max-width: 1000px;
             position: relative;
         }
-        
+
         /* Seat Styles */
         .seat {
             display: inline-block;
@@ -50,16 +56,16 @@
             cursor: pointer;
             font-weight: bold;
         }
-        
+
         .seat.reserved {
             background: #6a1b9a;
             cursor: not-allowed;
         }
-        
+
         .seat.selected {
             background: lightblue;
         }
-        
+
         /* Couch Styles */
         .couch {
             display: flex;
@@ -67,7 +73,7 @@
             margin: 10px 20px;
             position: relative;
         }
-        
+
         .couch-backrest {
             width: 100%;
             height: 10px;
@@ -75,42 +81,33 @@
             position: absolute;
             top: -10px;
         }
-        
+
         .couch-armrest {
             width: 10px;
             height: calc(100% - 4px);
             position: absolute;
         }
-        
+
         .couch-armrest.left {
             left: -12px;
         }
-        
+
         .couch-armrest.right {
             right: -12px;
         }
-        
-        /* Legend and User Controls */
-        .legend {
-            margin-top: 20px;
-            text-align: center;
-            color: black;
+
+        /* Chair Styles */
+        .highlight-left {
+            margin-right: 20px;
+            position: relative;
         }
 
-        .legend span {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            margin: 0 10px;
-            vertical-align: middle;
+        .highlight-right {
+            margin-left: 20px;
+            position: relative;
         }
 
-        .user-controls {
-            margin-top: 20px;
-            color: white;
-        }
-
-        /* Modal Styles */
+        /* Reservation Modal Styles */
         .modal {
             display: none;
             position: fixed;
@@ -122,6 +119,7 @@
             background-color: rgba(0, 0, 0, 0.5);
             justify-content: center;
             align-items: center;
+            overflow: auto;
         }
 
         .modal-content {
@@ -149,6 +147,7 @@
             text-decoration: none;
         }
 
+        /* Form Styles */
         #reservation-form label {
             display: block;
             margin-bottom: 5px;
@@ -175,10 +174,31 @@
         #reservation-form button:hover {
             background-color: #5a1486;
         }
+
+        /* Legend and User Controls */
+        .legend {
+            margin-top: 20px;
+            text-align: center;
+            color: black;
+        }
+
+        .legend span {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            margin: 0 10px;
+            vertical-align: middle;
+        }
+
+        .user-controls {
+            margin-top: 20px;
+            color: white;
+        }
     </style>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js"></script>
 </head>
+
 <body>
     <!-- Reservation Modal -->
     <div id="reservationModal" class="modal">
@@ -205,7 +225,7 @@
     <div class="seat-container">
         <h2>Sofa-Theater Reservation 13.01.25</h2>
         <div id="seating-area"></div>
-        
+
         <!-- Legend for the seats -->
         <div class="legend">
             <span style="background: linear-gradient(to right, #FF0000, #8bc34a, #212121, #f9fbe7, #fb8c00);"></span> Sofa-Platz
@@ -213,7 +233,7 @@
             <span style="background-color: #6a1b9a;"></span> reservierte Plätze
             <span style="background-color: brown;"></span> Stühle
         </div>
-        
+
         <!-- Reservation Button -->
         <div class="user-controls">
             <button onclick="toggleReservationForm()">Reservieren</button>
@@ -239,6 +259,10 @@
         const database = firebase.database(app);
 
         const seatingArea = document.getElementById('seating-area');
+        let couchColors = [
+            '#8bc34a', '#444444', '#ffffff', '#FF0000', '#FF0000', '#ffffff', '#8bc34a', '#fb8c00', '#fb8c00', '#FF0000', '#444444', '#8bc34a', '#444444', '#fb8c00', '#ffffff', '#FF0000', '#fb8c00', '#FF0000', '#444444', '#ffffff', '#FF0000', '#444444', '#8bc34a', '#fb8c00', '#ffffff', '#8bc34a', '#fb8c00', '#444444', '#444444', '#fb8c00', '#FF0000', '#ffffff', '#8bc34a', '#444444', '#ffffff', '#8bc34a', '#fb8c00'
+        ];
+        let currentCouchIndex = 0;
         let currentSeatNumber = 1;
 
         function createSeats() {
@@ -255,55 +279,52 @@
                 [2, 2, 2, 3, 3]
             ];
 
-            rows.forEach((groupSizes) => {
+            rows.forEach((groupSizes, rowIndex) => {
                 const rowDiv = document.createElement('div');
                 rowDiv.classList.add('row');
-                
+
                 groupSizes.forEach((groupSize) => {
                     const couchDiv = createCouch(groupSize);
                     rowDiv.appendChild(couchDiv);
                 });
 
-                seatingArea.appendChild(rowDiv);
+                seatingArea.prepend(rowDiv);
             });
 
-            loadReservations(); // Load reservations after seats are created
+            loadReservations();
         }
 
         function createCouch(groupSize) {
             const couchDiv = document.createElement('div');
             couchDiv.classList.add('couch');
+            couchDiv.setAttribute('title', `${groupSize}er Sofa`);
 
             const backrest = document.createElement('div');
             backrest.classList.add('couch-backrest');
-            backrest.style.backgroundColor = '#8bc34a';
+            backrest.style.backgroundColor = getCouchColor();
             couchDiv.appendChild(backrest);
 
             for (let i = 0; i < groupSize; i++) {
                 const seat = document.createElement('div');
                 seat.classList.add('seat');
                 seat.setAttribute('data-seat-number', currentSeatNumber++);
+                seat.style.backgroundColor = backrest.style.backgroundColor;
                 seat.addEventListener('click', () => toggleSeatSelection(seat));
                 couchDiv.appendChild(seat);
             }
 
-            const leftArmrest = document.createElement('div');
-            leftArmrest.classList.add('couch-armrest', 'left');
-            leftArmrest.style.backgroundColor = '#8bc34a';
-            couchDiv.appendChild(leftArmrest);
-
-            const rightArmrest = document.createElement('div');
-            rightArmrest.classList.add('couch-armrest', 'right');
-            rightArmrest.style.backgroundColor = '#8bc34a';
-            couchDiv.appendChild(rightArmrest);
-
             return couchDiv;
+        }
+
+        function getCouchColor() {
+            const color = couchColors[currentCouchIndex % couchColors.length];
+            currentCouchIndex++;
+            return color;
         }
 
         function toggleSeatSelection(seat) {
             if (seat.classList.contains('reserved')) return;
             seat.classList.toggle('selected');
-            saveReservations();
         }
 
         function saveReservations() {
@@ -318,7 +339,7 @@
         }
 
         function loadReservations() {
-            return firebase.database().ref('reservations/').once('value').then((snapshot) => {
+            firebase.database().ref('reservations/').once('value').then((snapshot) => {
                 const data = snapshot.val();
                 if (data && data.reservedSeats) {
                     data.reservedSeats.forEach(seatNumber => {
@@ -332,10 +353,6 @@
             });
         }
 
-        window.onload = function () {
-            createSeats();
-        };
-
         document.getElementById('reservation-form').addEventListener('submit', function (e) {
             e.preventDefault();
 
@@ -348,16 +365,10 @@
 
             saveReservations();
             closeReservationForm();
-            alert('Vielen Dank! Ihre Reservation ist bei uns eingegangen.');
         });
 
-        function toggleReservationForm() {
-            document.getElementById('reservationModal').style.display = 'flex';
-        }
-
-        function closeReservationForm() {
-            document.getElementById('reservationModal').style.display = 'none';
-        }
+        window.onload = createSeats;
     </script>
 </body>
+
 </html>
