@@ -219,6 +219,9 @@
             <button onclick="toggleReservationForm()">Reservieren</button>
         </div>
     </div>
+    <div class="reservation-notice">
+        <p style="color: black; margin-top: 10px;">*Ihre Reservation ist erst gültig, sobald Sie eine Bestätigungs-E-Mail von uns erhalten haben.</p>
+    </div>
 
     <script>
         const firebaseConfig = {
@@ -252,7 +255,7 @@
                 [2, 2, 2, 3, 3]
             ];
 
-            rows.forEach((groupSizes, rowIndex) => {
+            rows.forEach((groupSizes) => {
                 const rowDiv = document.createElement('div');
                 rowDiv.classList.add('row');
                 
@@ -271,6 +274,11 @@
             const couchDiv = document.createElement('div');
             couchDiv.classList.add('couch');
 
+            const backrest = document.createElement('div');
+            backrest.classList.add('couch-backrest');
+            backrest.style.backgroundColor = '#8bc34a';
+            couchDiv.appendChild(backrest);
+
             for (let i = 0; i < groupSize; i++) {
                 const seat = document.createElement('div');
                 seat.classList.add('seat');
@@ -278,6 +286,16 @@
                 seat.addEventListener('click', () => toggleSeatSelection(seat));
                 couchDiv.appendChild(seat);
             }
+
+            const leftArmrest = document.createElement('div');
+            leftArmrest.classList.add('couch-armrest', 'left');
+            leftArmrest.style.backgroundColor = '#8bc34a';
+            couchDiv.appendChild(leftArmrest);
+
+            const rightArmrest = document.createElement('div');
+            rightArmrest.classList.add('couch-armrest', 'right');
+            rightArmrest.style.backgroundColor = '#8bc34a';
+            couchDiv.appendChild(rightArmrest);
 
             return couchDiv;
         }
