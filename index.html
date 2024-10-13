@@ -536,7 +536,7 @@ database.ref('reservations').push(reservationDetails).then(() => {
         }
 
         // Initialize seat layout
-        createSeats();
+        
 	    database.ref('reservations').on('value', (snapshot) => {
     const reservations = snapshot.val();
     if (reservations) {
@@ -551,7 +551,7 @@ database.ref('reservations').push(reservationDetails).then(() => {
         });
     }
 });
-
+createSeats();
     </script>  
 </body>
 </html>
