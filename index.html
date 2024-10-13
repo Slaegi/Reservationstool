@@ -259,6 +259,10 @@ const firebaseConfig = {
 const app = firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
+document.addEventListener('DOMContentLoaded', () => {
+    loadReservationsAndCreateSeats();
+});
+
 const seatingArea = document.getElementById('seating-area');
 let couchColors = [
     '#8bc34a', '#444444', '#ffffff', '#FF0000', '#FF0000', '#ffffff', '#8bc34a', '#fb8c00', '#fb8c00',
@@ -272,6 +276,7 @@ let currentSeatNumber = 1;
 
 // Function to create seats in the seating area
 function createSeats() {
+    console.log("Creating seats...");
     seatingArea.innerHTML = '';
     const rows = [
         [3, 2, 2, 2], // Rows and seat grouping
@@ -377,9 +382,10 @@ function getCouchColor() {
 // Function to load reservations and create seats
 function loadReservationsAndCreateSeats() {
     // Load reservations from Firebase before creating seats
+    console.log("Loading reservations...");
     database.ref('reservations').once('value').then((snapshot) => {
         const reservations = snapshot.val();
-        
+
         // Render the seats layout
         createSeats();
 
@@ -400,9 +406,28 @@ function loadReservationsAndCreateSeats() {
     });
 }
 
-// Call this new function instead of createSeats()
-loadReservationsAndCreateSeats();
+// Event Listener Functions
+function toggleSeatSelection(seat) {
+    if (seat.classList.contains('reserved')) return;
+    seat.classList.toggle('selected');
+}
+
+function toggleCouchSelection(couchDiv) {
+    const seats = couchDiv.querySelectorAll('.seat');
+    const allSelected = Array.from(seats).every(seat => seat.classList.contains('selected'));
+    seats.forEach(seat => {
+        if (!seat.classList.contains('reserved')) {
+            if (allSelected) {
+                seat.classList.remove('selected');
+            } else {
+                seat.classList.add('selected');
+            }
+            seat.style.backgroundColor = seat.classList.contains('selected') ? 'lightblue' : seat.parentNode.querySelector('.couch-backrest').style.backgroundColor;
+        }
+    });
+}
 </script>
+
   
 </body>
 </html>
