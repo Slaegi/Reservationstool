@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+	import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-analytics.js";
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Seat Reservation</title>
     <link rel="stylesheet" href="styles.css">
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
     <style>
         /* General Page Styles */
         body {
@@ -197,24 +197,6 @@
     </style>
 </head>
 <body>
-    <!-- Firebase Initialization -->
-    <script>
-        // Firebase configuration
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_AUTH_DOMAIN",
-            databaseURL: "YOUR_DATABASE_URL",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_STORAGE_BUCKET",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID"
-        };
-
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
-    </script>
-
     <!-- Reservation Modal -->
     <div id="reservationModal" class="modal">
         <div class="modal-content">
@@ -230,8 +212,8 @@
                 <label for="phone">Mobile:</label>
                 <input type="text" id="phone" required>
                 <label for="mail">E-Mail:</label>
-                <input type="email" id="mail" required>
-                <button type="submit" onclick="submitReservation(event)">verbindlich reservieren</button>
+                <input type="text" id="mail" required>
+                <button type="submit">verbindlich reservieren</button>
             </form>
         </div>
     </div>
@@ -259,6 +241,21 @@
 	</div>
 
     <script>
+	    // Your Firebase Configuration
+const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+    databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT_ID.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+};
+
+// Initialize Firebase
+const app = firebase.initializeApp(firebaseConfig);
+const database = firebase.database();
+
         const seatingArea = document.getElementById('seating-area');
         let reservations = [];
         let couchColors = [
@@ -292,7 +289,7 @@
 
                 // Add row label (Row numbers)
                 const rowNumberDiv = document.createElement('div');
-                rowNumberDiv.textContent = `Row ${rowIndex + 1}`;
+                rowNumberDiv.textContent = Row ${rowIndex + 1};
                 rowNumberDiv.style.color = 'black';
                 rowNumberDiv.style.marginRight = '20px';
                 rowDiv.appendChild(rowNumberDiv);
@@ -323,8 +320,8 @@
 
             // Number the chairs and seats
             let chairNumber = 1;
-            rightChairElements.forEach(chair => chair.textContent = `St${chairNumber++}`);
-            leftChairElements.forEach(chair => chair.textContent = `St${chairNumber++}`);
+            rightChairElements.forEach(chair => chair.textContent = St${chairNumber++});
+            leftChairElements.forEach(chair => chair.textContent = St${chairNumber++});
             let seatNumber = 1;
             seatElements.forEach(seat => seat.textContent = seatNumber++);
         }
@@ -332,9 +329,9 @@
         // Function to create a chair
         function createChair(side) {
             const chair = document.createElement('div');
-            chair.classList.add('seat', `highlight-${side}`);
+            chair.classList.add('seat', highlight-${side});
             chair.setAttribute('title', 'Stuhl');
-            chair.setAttribute('data-seat-number', `St${currentSeatNumber++}`); 
+            chair.setAttribute('data-seat-number', St${currentSeatNumber++}); 
 
             chair.addEventListener('click', () => toggleSeatSelection(chair));
 
@@ -357,7 +354,7 @@
         function createCouch(groupSize) {
             const couchDiv = document.createElement('div');
             couchDiv.classList.add('couch');
-            couchDiv.setAttribute('title', `${groupSize}er Sofa`);
+            couchDiv.setAttribute('title', ${groupSize}er Sofa);
 
             const backrest = document.createElement('div');
             backrest.classList.add('couch-backrest');
@@ -464,55 +461,54 @@
         }
 
         // Handle form submission and seat reservation
-        function submitReservation(e) {
+        document.getElementById('reservation-form').addEventListener('submit', function (e) {
             e.preventDefault();
             
             const selectedSeats = document.querySelectorAll('.seat.selected');
             const seatNumbers = Array.from(selectedSeats).map(seat => seat.textContent);
-            const reservationData = {
-                firstName: document.getElementById('first-name').value,
-                lastName: document.getElementById('last-name').value,
-                place: document.getElementById('place').value,
-                phone: document.getElementById('phone').value,
-                email: document.getElementById('mail').value,
-                seats: seatNumbers,
-                timestamp: new Date().toISOString()
-            };
 
-            // Save reservation to Firebase
-            database.ref('reservations').push(reservationData)
-                .then(() => {
-                    // Mark the selected seats as reserved
-                    selectedSeats.forEach(seat => {
-                        seat.classList.remove('selected');
-                        seat.classList.add('reserved');
-                        seat.style.backgroundColor = '#6a1b9a';
-                    });
-                    
-                    const allCouches = document.querySelectorAll('.couch');
-                    allCouches.forEach(couch => {
-                        const seats = couch.querySelectorAll('.seat');
-                        const allReserved = Array.from(seats).every(seat => seat.classList.contains('reserved'));
+            // Mark the selected seats as reserved
+            selectedSeats.forEach(seat => {
+                seat.classList.remove('selected');
+                seat.classList.add('reserved');
+                seat.style.backgroundColor = '#6a1b9a';
+            });
+            
+            const allCouches = document.querySelectorAll('.couch');
+            allCouches.forEach(couch => {
+                const seats = couch.querySelectorAll('.seat');
+                const allReserved = Array.from(seats).every(seat => seat.classList.contains('reserved'));
 
-                        if (allReserved) {
-                            // Mark the backrest and armrests as grey
-                            const backrest = couch.querySelector('.couch-backrest');
-                            const leftArmrest = couch.querySelector('.couch-armrest.left');
-                            const rightArmrest = couch.querySelector('.couch-armrest.right');
-                        
-                            if (backrest) backrest.style.backgroundColor = '#6a1b9a';
-                            if (leftArmrest) leftArmrest.style.backgroundColor = '#6a1b9a';
-                            if (rightArmrest) rightArmrest.style.backgroundColor = '#6a1b9a';
-                        }
-                    });
+                if (allReserved) {
+                    // Mark the backrest and armrests as grey
+                    const backrest = couch.querySelector('.couch-backrest');
+                    const leftArmrest = couch.querySelector('.couch-armrest.left');
+                    const rightArmrest = couch.querySelector('.couch-armrest.right');
+                
+                    if (backrest) backrest.style.backgroundColor = '#6a1b9a';
+                    if (leftArmrest) leftArmrest.style.backgroundColor = '#6a1b9a';
+                    if (rightArmrest) rightArmrest.style.backgroundColor = '#6a1b9a';
+                }
+            });
+		const reservationDetails = {
+    firstName: document.getElementById('first-name').value,
+    lastName: document.getElementById('last-name').value,
+    place: document.getElementById('place').value,
+    phone: document.getElementById('phone').value,
+    email: document.getElementById('mail').value,
+    seats: seatNumbers
+};
 
-                    closeReservationForm();
-                    displayConfirmation('Vielen Dank! Ihre Reservation ist bei uns eingegangen. Sobald diese Engetragen ist erhalten Sie von uns eine Bestätigungs-Mail.');
-                })
-                .catch((error) => {
-                    displayError('Fehler beim Speichern der Reservation: ' + error.message);
-                });
-        }
+// Save reservation details in Firebase
+database.ref('reservations').push(reservationDetails).then(() => {
+    console.log('Reservation saved successfully!');
+}).catch((error) => {
+    console.error('Error saving reservation:', error);
+});
+
+            closeReservationForm();
+            displayConfirmation('Vielen Dank! Ihre Reservation ist bei uns eingegangen. Sobald diese Engetragen ist erhalten Sie von uns eine Bestätigungs-Mail.');
+        });
         
         // Function to display confirmation message
         function displayConfirmation(message) {
@@ -541,6 +537,21 @@
 
         // Initialize seat layout
         createSeats();
+	    database.ref('reservations').on('value', (snapshot) => {
+    const reservations = snapshot.val();
+    if (reservations) {
+        Object.values(reservations).forEach(reservation => {
+            reservation.seats.forEach(seatNumber => {
+                const seatElement = document.querySelector(`.seat[data-seat-number='${seatNumber}']`);
+                if (seatElement) {
+                    seatElement.classList.add('reserved');
+                    seatElement.style.backgroundColor = '#6a1b9a';
+                }
+            });
+        });
+    }
+});
+
     </script>  
 </body>
 </html>
