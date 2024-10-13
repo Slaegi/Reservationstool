@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Seat Reservation</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
     <style>
         /* General Page Styles */
         body {
@@ -193,11 +195,26 @@
             color: white;
         }
     </style>
-	<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js"></script>
-	<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-analytics.js"></script>
-
 </head>
 <body>
+    <!-- Firebase Initialization -->
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            databaseURL: "YOUR_DATABASE_URL",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+    </script>
+
     <!-- Reservation Modal -->
     <div id="reservationModal" class="modal">
         <div class="modal-content">
@@ -242,228 +259,288 @@
 	</div>
 
     <script>
-	const firebaseConfig = {
-    apiKey: "AIzaSyBzMceAxyb4HSzxtItmP0HWJoQ0D0BEers",
-    authDomain: "sofa-reservation.firebaseapp.com",
-    databaseURL: "https://sofa-reservation-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "sofa-reservation",
-    storageBucket: "sofa-reservation.appspot.com",
-    messagingSenderId: "941090818930",
-    appId: "1:941090818930:web:1e51860aafff14e130abeb",
-    measurementId: "G-L4Y4DM8S6M"
-  };
-	const app = firebase.initializeApp(firebaseConfig);
-	const database = firebase.database();
-    const seatingArea = document.getElementById('seating-area');
-    let reservations = [];
-    let couchColors = [
-        '#8bc34a', '#444444', '#ffffff', '#FF0000', '#FF0000', '#ffffff', '#8bc34a', '#fb8c00', '#fb8c00', '#FF0000', '#444444', '#8bc34a', '#444444', '#fb8c00', '#ffffff', '#FF0000', '#fb8c00', '#FF0000', '#444444', '#ffffff', '#FF0000', '#444444', '#8bc34a', '#fb8c00', '#ffffff', '#8bc34a', '#fb8c00', '#444444', '#444444', '#fb8c00', '#FF0000', '#ffffff', '#8bc34a', '#444444', '#ffffff', '#8bc34a', '#fb8c00'
-    ];
-    let currentCouchIndex = 0;
-    let currentSeatNumber = 1;
-
-    // Function to create seats in the seating area
-    function createSeats() {
-        seatingArea.innerHTML = '';
-        const rows = [
-            [3, 2, 2, 2], // Rows and seat grouping
-            [3, 2, 2, 2],
-            [2, 2, 3, 2],
-            [2, 2, 2, 3],
-            [2, 2, 2, 3],
-            [2, 2, 2, 3],
-            [3, 2, 2, 2],
-            [2, 3, 2, 2],
-            [2, 2, 2, 3, 3]
+        const seatingArea = document.getElementById('seating-area');
+        let reservations = [];
+        let couchColors = [
+            '#8bc34a', '#444444', '#ffffff', '#FF0000', '#FF0000', '#ffffff', '#8bc34a', '#fb8c00', '#fb8c00', '#FF0000', '#444444', '#8bc34a', '#444444', '#fb8c00', '#ffffff', '#FF0000', '#fb8c00', '#FF0000', '#444444', '#ffffff', '#FF0000', '#444444', '#8bc34a', '#fb8c00', '#ffffff', '#8bc34a', '#fb8c00', '#444444', '#444444', '#fb8c00', '#FF0000', '#ffffff', '#8bc34a', '#444444', '#ffffff', '#8bc34a', '#fb8c00'
         ];
-        
-        const seatElements = [];
-        const rightChairElements = [];
-        const leftChairElements = [];
+        let currentCouchIndex = 0;
+		let currentSeatNumber = 1;
 
-        rows.forEach((groupSizes, rowIndex) => {
-            const rowDiv = document.createElement('div');
-            rowDiv.classList.add('row');
+        // Function to create seats in the seating area
+        function createSeats() {
+            seatingArea.innerHTML = '';
+            const rows = [
+                [3, 2, 2, 2], // Rows and seat grouping
+                [3, 2, 2, 2],
+                [2, 2, 3, 2],
+                [2, 2, 2, 3],
+                [2, 2, 2, 3],
+                [2, 2, 2, 3],
+                [3, 2, 2, 2],
+                [2, 3, 2, 2],
+                [2, 2, 2, 3, 3]
+            ];
+            
+            const seatElements = [];
+            const rightChairElements = [];
+            const leftChairElements = [];
 
-            // Add row label (Row numbers)
-            const rowNumberDiv = document.createElement('div');
-            rowNumberDiv.textContent = Row ${rowIndex + 1};
-            rowNumberDiv.style.color = 'black';
-            rowNumberDiv.style.marginRight = '20px';
-            rowDiv.appendChild(rowNumberDiv);
+            rows.forEach((groupSizes, rowIndex) => {
+                const rowDiv = document.createElement('div');
+                rowDiv.classList.add('row');
 
-            // Add left chair (excluding topmost row)
-            if (rowIndex !== rows.length - 1) {
-                const leftChair = createChair('left');
-                rowDiv.appendChild(leftChair);
-                leftChairElements.push(leftChair);
-            }
+                // Add row label (Row numbers)
+                const rowNumberDiv = document.createElement('div');
+                rowNumberDiv.textContent = `Row ${rowIndex + 1}`;
+                rowNumberDiv.style.color = 'black';
+                rowNumberDiv.style.marginRight = '20px';
+                rowDiv.appendChild(rowNumberDiv);
 
-            // Create couch groups
-            groupSizes.forEach((groupSize) => {
-                const couchDiv = createCouch(groupSize);
-                rowDiv.appendChild(couchDiv);
-                seatElements.push(...Array.from(couchDiv.querySelectorAll('.seat')));
+                // Add left chair (excluding topmost row)
+                if (rowIndex !== rows.length - 1) {
+                    const leftChair = createChair('left');
+                    rowDiv.appendChild(leftChair);
+                    leftChairElements.push(leftChair);
+                }
+
+                // Create couch groups
+                groupSizes.forEach((groupSize) => {
+                    const couchDiv = createCouch(groupSize);
+                    rowDiv.appendChild(couchDiv);
+                    seatElements.push(...Array.from(couchDiv.querySelectorAll('.seat')));
+                });
+
+                // Add right chair (excluding topmost row)
+                if (rowIndex !== rows.length - 1) {
+                    const rightChair = createChair('right');
+                    rowDiv.appendChild(rightChair);
+                    rightChairElements.push(rightChair);
+                }
+
+                seatingArea.prepend(rowDiv); // Ensure bottom-to-top rendering
             });
 
-            // Add right chair (excluding topmost row)
-            if (rowIndex !== rows.length - 1) {
-                const rightChair = createChair('right');
-                rowDiv.appendChild(rightChair);
-                rightChairElements.push(rightChair);
-            }
-
-            seatingArea.prepend(rowDiv); // Ensure bottom-to-top rendering
-        });
-
-        // Number the chairs and seats
-        let chairNumber = 1;
-        rightChairElements.forEach(chair => chair.textContent = St${chairNumber++});
-        leftChairElements.forEach(chair => chair.textContent = St${chairNumber++});
-        let seatNumber = 1;
-        seatElements.forEach(seat => seat.textContent = seatNumber++);
-        
-        loadReservations();
-    }
-
-    // Function to create a chair
-    function createChair(side) {
-        const chair = document.createElement('div');
-        chair.classList.add('seat', highlight-${side});
-        chair.setAttribute('title', 'Stuhl');
-        chair.setAttribute('data-seat-number', St${currentSeatNumber++}); 
-
-        chair.addEventListener('click', () => toggleSeatSelection(chair));
-
-        const backrest = document.createElement('div');
-        backrest.classList.add('chair-backrest');
-        chair.appendChild(backrest);
-
-        const armrestLeft = document.createElement('div');
-        armrestLeft.classList.add('chair-armrest', 'left');
-        chair.appendChild(armrestLeft);
-
-        const armrestRight = document.createElement('div');
-        armrestRight.classList.add('chair-armrest', 'right');
-        chair.appendChild(armrestRight);
-
-        return chair;
-    }
-
-    // Function to create a couch group
-    function createCouch(groupSize) {
-        const couchDiv = document.createElement('div');
-        couchDiv.classList.add('couch');
-        couchDiv.setAttribute('title', ${groupSize}er Sofa);
-
-        const backrest = document.createElement('div');
-        backrest.classList.add('couch-backrest');
-        backrest.style.backgroundColor = getCouchColor();
-        couchDiv.appendChild(backrest);
-
-        for (let i = 0; i < groupSize; i++) {
-            const seat = document.createElement('div');
-            seat.classList.add('seat');
-            seat.setAttribute('data-seat-number', currentSeatNumber++);
-            seat.style.backgroundColor = backrest.style.backgroundColor;
-            seat.addEventListener('click', () => toggleCouchSelection(couchDiv));
-            couchDiv.appendChild(seat);
+            // Number the chairs and seats
+            let chairNumber = 1;
+            rightChairElements.forEach(chair => chair.textContent = `St${chairNumber++}`);
+            leftChairElements.forEach(chair => chair.textContent = `St${chairNumber++}`);
+            let seatNumber = 1;
+            seatElements.forEach(seat => seat.textContent = seatNumber++);
         }
 
-        const leftArmrest = document.createElement('div');
-        leftArmrest.classList.add('couch-armrest', 'left');
-        leftArmrest.style.backgroundColor = backrest.style.backgroundColor;
-        couchDiv.appendChild(leftArmrest);
+        // Function to create a chair
+        function createChair(side) {
+            const chair = document.createElement('div');
+            chair.classList.add('seat', `highlight-${side}`);
+            chair.setAttribute('title', 'Stuhl');
+            chair.setAttribute('data-seat-number', `St${currentSeatNumber++}`); 
 
-        const rightArmrest = document.createElement('div');
-        rightArmrest.classList.add('couch-armrest', 'right');
-        rightArmrest.style.backgroundColor = backrest.style.backgroundColor;
-        couchDiv.appendChild(rightArmrest);
+            chair.addEventListener('click', () => toggleSeatSelection(chair));
 
-        return couchDiv;
-    }
+            const backrest = document.createElement('div');
+            backrest.classList.add('chair-backrest');
+            chair.appendChild(backrest);
 
-    // Function to get the color of the couch
-    function getCouchColor() {
-        const color = couchColors[currentCouchIndex % couchColors.length];
-        currentCouchIndex++;
-        return color;
-    }
+            const armrestLeft = document.createElement('div');
+            armrestLeft.classList.add('chair-armrest', 'left');
+            chair.appendChild(armrestLeft);
 
-    // Function to toggle seat selection
-    function toggleSeatSelection(seat) {
-        if (seat.classList.contains('reserved')) return;
-        seat.classList.toggle('selected');
-        saveReservations();
-    }
+            const armrestRight = document.createElement('div');
+            armrestRight.classList.add('chair-armrest', 'right');
+            chair.appendChild(armrestRight);
 
-    // Function to toggle couch selection
-    function toggleCouchSelection(couchDiv) {
-        const seats = couchDiv.querySelectorAll('.seat');
-        const allSelected = Array.from(seats).every(seat => seat.classList.contains('selected'));
-        seats.forEach(seat => {
-            if (!seat.classList.contains('reserved')) {
-                if (allSelected) {
-                    seat.classList.remove('selected');
-                } else {
-                    seat.classList.add('selected');
-                }
-                seat.style.backgroundColor = seat.classList.contains('selected') ? 'lightblue' : seat.parentNode.querySelector('.couch-backrest').style.backgroundColor;
+            return chair;
+        }
+
+        // Function to create a couch group
+        function createCouch(groupSize) {
+            const couchDiv = document.createElement('div');
+            couchDiv.classList.add('couch');
+            couchDiv.setAttribute('title', `${groupSize}er Sofa`);
+
+            const backrest = document.createElement('div');
+            backrest.classList.add('couch-backrest');
+            backrest.style.backgroundColor = getCouchColor();
+            couchDiv.appendChild(backrest);
+
+            for (let i = 0; i < groupSize; i++) {
+                const seat = document.createElement('div');
+                seat.classList.add('seat');
+                seat.setAttribute('data-seat-number', currentSeatNumber++);
+                seat.style.backgroundColor = backrest.style.backgroundColor;
+                seat.addEventListener('click', () => toggleCouchSelection(couchDiv));
+                couchDiv.appendChild(seat);
             }
-        });
-        saveReservations();
-    }
 
-    // Functions to save and load reservations
-    function saveReservations() {
-    const reservedSeats = [];
-    document.querySelectorAll('.seat.reserved').forEach(seat => {
-        reservedSeats.push(seat.getAttribute('data-seat-number'));
-    });
+            const leftArmrest = document.createElement('div');
+            leftArmrest.classList.add('couch-armrest', 'left');
+            leftArmrest.style.backgroundColor = backrest.style.backgroundColor;
+            couchDiv.appendChild(leftArmrest);
 
-    // Daten in Firebase speichern
-    firebase.database().ref('reservations/').set({
-        reservedSeats: reservedSeats
-    });
-}
+            const rightArmrest = document.createElement('div');
+            rightArmrest.classList.add('couch-armrest', 'right');
+            rightArmrest.style.backgroundColor = backrest.style.backgroundColor;
+            couchDiv.appendChild(rightArmrest);
 
-    function loadReservations() {
-    firebase.database().ref('reservations/').once('value', (snapshot) => {
-        const data = snapshot.val();
-        if (data && data.reservedSeats) {
-            data.reservedSeats.forEach(seatNumber => {
-                const seat = document.querySelector(.seat[data-seat-number="${seatNumber}"]);
-                if (seat) {
-                    seat.classList.add('reserved');
-                    seat.style.backgroundColor = '#6a1b9a';
+            return couchDiv;
+        }
+
+        // Function to get the color of the couch
+        function getCouchColor() {
+            const color = couchColors[currentCouchIndex % couchColors.length];
+            currentCouchIndex++;
+            return color;
+        }
+
+        // Function to toggle seat selection
+        function toggleSeatSelection(seat) {
+            if (seat.classList.contains('reserved')) return;
+            seat.classList.toggle('selected');
+        }
+
+        // Function to toggle couch selection
+        function toggleCouchSelection(couchDiv) {
+            const seats = couchDiv.querySelectorAll('.seat');
+            const allSelected = Array.from(seats).every(seat => seat.classList.contains('selected'));
+            seats.forEach(seat => {
+                if (!seat.classList.contains('reserved')) {
+                    if (allSelected) {
+                        seat.classList.remove('selected');
+                    } else {
+                        seat.classList.add('selected');
+                    }
+                    seat.style.backgroundColor = seat.classList.contains('selected') ? 'lightblue' : seat.parentNode.querySelector('.couch-backrest').style.backgroundColor;
                 }
             });
         }
-    });
-}
 
-    // Initialize seat layout on page load
-    window.onload = createSeats;
+        // Functions to handle reservation modal visibility
+        function toggleReservationForm() {
+            const selectedSeats = document.querySelectorAll('.seat.selected');
 
-    // Handle form submission and seat reservation
-    document.getElementById('reservation-form').addEventListener('submit', function (e) {
-        e.preventDefault();
+            if (selectedSeats.length === 0) {
+                displayError('Bitte wählen Sie mindestens einen Platz aus, bevor Sie fortfahren.');
+                return;
+            }
+            const modal = document.getElementById('reservationModal');
+            modal.style.display = 'flex';
+        }
         
-        const selectedSeats = document.querySelectorAll('.seat.selected');
-        selectedSeats.forEach(seat => {
-            seat.classList.remove('selected');
-            seat.classList.add('reserved');
-            seat.style.backgroundColor = '#6a1b9a';
+        function displayError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.classList.add('error-message');
+            errorDiv.textContent = message;
+
+            // Style error message
+            errorDiv.style.position = 'fixed';
+            errorDiv.style.top = '20px';
+            errorDiv.style.right = '20px';
+            errorDiv.style.backgroundColor = 'red';
+            errorDiv.style.color = 'white';
+            errorDiv.style.padding = '15px';
+            errorDiv.style.borderRadius = '5px';
+            errorDiv.style.boxShadow = '0 2px 5px rgba(0,0,0,0.3)';
+            errorDiv.style.zIndex = '2';
+
+            document.body.appendChild(errorDiv);
+
+            // Remove error message after 5 seconds
+            setTimeout(() => {
+                errorDiv.remove();
+            }, 10000);
+        }    
+
+        function closeReservationForm() {
+            const modal = document.getElementById('reservationModal');
+            modal.style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('reservationModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        // Handle form submission and seat reservation
+        document.getElementById('reservation-form').addEventListener('submit', function (e) {
+            e.preventDefault();
+            
+            const selectedSeats = document.querySelectorAll('.seat.selected');
+            const seatNumbers = Array.from(selectedSeats).map(seat => seat.textContent);
+            const reservationData = {
+                firstName: document.getElementById('first-name').value,
+                lastName: document.getElementById('last-name').value,
+                place: document.getElementById('place').value,
+                phone: document.getElementById('phone').value,
+                email: document.getElementById('mail').value,
+                seats: seatNumbers,
+                timestamp: new Date().toISOString()
+            };
+
+            // Save reservation to Firebase
+            database.ref('reservations').push(reservationData)
+                .then(() => {
+                    // Mark the selected seats as reserved
+                    selectedSeats.forEach(seat => {
+                        seat.classList.remove('selected');
+                        seat.classList.add('reserved');
+                        seat.style.backgroundColor = '#6a1b9a';
+                    });
+                    
+                    const allCouches = document.querySelectorAll('.couch');
+                    allCouches.forEach(couch => {
+                        const seats = couch.querySelectorAll('.seat');
+                        const allReserved = Array.from(seats).every(seat => seat.classList.contains('reserved'));
+
+                        if (allReserved) {
+                            // Mark the backrest and armrests as grey
+                            const backrest = couch.querySelector('.couch-backrest');
+                            const leftArmrest = couch.querySelector('.couch-armrest.left');
+                            const rightArmrest = couch.querySelector('.couch-armrest.right');
+                        
+                            if (backrest) backrest.style.backgroundColor = '#6a1b9a';
+                            if (leftArmrest) leftArmrest.style.backgroundColor = '#6a1b9a';
+                            if (rightArmrest) rightArmrest.style.backgroundColor = '#6a1b9a';
+                        }
+                    });
+
+                    closeReservationForm();
+                    displayConfirmation('Vielen Dank! Ihre Reservation ist bei uns eingegangen. Sobald diese Engetragen ist erhalten Sie von uns eine Bestätigungs-Mail.');
+                })
+                .catch((error) => {
+                    displayError('Fehler beim Speichern der Reservation: ' + error.message);
+                });
         });
         
-        saveReservations(); // Save reservations after confirming
-        closeReservationForm();
-        displayConfirmation('Vielen Dank! Ihre Reservation ist bei uns eingegangen. Sobald diese eingetragen ist, erhalten Sie von uns eine Bestätigungs-Mail.');
-    });
-</script>
+        // Function to display confirmation message
+        function displayConfirmation(message) {
+            const confirmationDiv = document.createElement('div');
+            confirmationDiv.classList.add('confirmation-message');
+            confirmationDiv.textContent = message;
 
+            // Style confirmation message
+            confirmationDiv.style.position = 'fixed';
+            confirmationDiv.style.bottom = '20px';
+            confirmationDiv.style.right = '20px';
+            confirmationDiv.style.backgroundColor = '#e1bee7';
+            confirmationDiv.style.color = 'black';
+            confirmationDiv.style.padding = '15px';
+            confirmationDiv.style.borderRadius = '5px';
+            confirmationDiv.style.boxShadow = '0 2px 5px rgba(0,0,0,0.3)';
+            confirmationDiv.style.zIndex = '2';
 
+            document.body.appendChild(confirmationDiv);
 
-  
+            // Remove confirmation message after 5 seconds
+            setTimeout(() => {
+                confirmationDiv.remove();
+            }, 10000);
+        }
+
+        // Initialize seat layout
+        createSeats();
+    </script>  
 </body>
 </html>
