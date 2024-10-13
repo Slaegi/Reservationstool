@@ -551,7 +551,34 @@ database.ref('reservations').push(reservationDetails).then(() => {
         });
     }
 });
-createSeats();
+	    function loadReservationsAndCreateSeats() {
+    // Load reservations from Firebase before creating seats
+    database.ref('reservations').once('value').then((snapshot) => {
+        const reservations = snapshot.val();
+        
+        // Render the seats layout
+        createSeats();
+
+        // If there are reservations, mark them as reserved
+        if (reservations) {
+            Object.values(reservations).forEach(reservation => {
+                reservation.seats.forEach(seatNumber => {
+                    const seatElement = document.querySelector(`.seat[data-seat-number='${seatNumber}']`);
+                    if (seatElement) {
+                        seatElement.classList.add('reserved');
+                        seatElement.style.backgroundColor = '#6a1b9a';
+                    }
+                });
+            });
+        }
+    }).catch((error) => {
+        console.error('Error loading reservations:', error);
+    });
+}
+
+// Call this new function instead of createSeats()
+loadReservationsAndCreateSeats();
+
     </script>  
 </body>
 </html>
