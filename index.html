@@ -505,6 +505,52 @@
 
         // Initialize seat layout
         createSeats();
+	document.addEventListener('DOMContentLoaded', async () => {
+    const response = await fetch('http://localhost:3000/reservations');
+    const reservations = await response.json();
+    reservations.forEach(reservation => {
+        const seatElement = document.querySelector(`.seat[data-seat-number="${reservation.seatNumber}"]`);
+        if (seatElement) {
+            seatElement.classList.add('reserved');
+            seatElement.style.backgroundColor = '#6a1b9a';
+        }
+    });
+});
+
+// Reservierung speichern beim Absenden des Formulars
+document.getElementById('reservation-form').addEventListener('submit', async function (e) {
+    e.preventDefault();
+
+    const selectedSeats = document.querySelectorAll('.seat.selected');
+    const seatNumbers = Array.from(selectedSeats).map(seat => seat.textContent);
+    
+    const reservationData = {
+        firstName: document.getElementById('first-name').value,
+        lastName: document.getElementById('last-name').value,
+        place: document.getElementById('place').value,
+        phone: document.getElementById('phone').value,
+        email: document.getElementById('mail').value,
+    };
+
+    for (const seatNumber of seatNumbers) {
+        await fetch('http://localhost:3000/reserve', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ ...reservationData, seatNumber })
+        });
+    }
+    
+    // Markiere Sitze als reserviert und schließe das Modal
+    selectedSeats.forEach(seat => {
+        seat.classList.remove('selected');
+        seat.classList.add('reserved');
+        seat.style.backgroundColor = '#6a1b9a';
+    });
+
+    closeReservationForm();
+});
     </script>  
 </body>
 </html>
