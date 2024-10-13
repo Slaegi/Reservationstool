@@ -193,8 +193,9 @@
             color: white;
         }
     </style>
-    <script src="https://www.gstatic.com/firebasejs/9.14.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.14.1/firebase-database.js"></script>
+	<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js"></script>
+	<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-analytics.js"></script>
+
 </head>
 <body>
     <!-- Reservation Modal -->
@@ -225,6 +226,7 @@
         
         <!-- Legend for the seats -->
         <div class="legend">
+            <span style="background: linear-gradient(to right, #FF0000, #8bc34a, #212121, #f9fbe7, #fb8c00);"></span> Sofa-Platz
             <span style="background-color: lightblue;"></span> ausgewählter Platz
             <span style="background-color: #6a1b9a;"></span> reservierte Plätze
             <span style="background-color: brown;"></span> Stühle
@@ -235,122 +237,233 @@
             <button onclick="toggleReservationForm()">Reservieren</button>
         </div>
     </div>
-    <div class="reservation-notice">
+	<div class="reservation-notice">
         <p style="color: black; margin-top: 10px;">*Ihre Reservation ist erst gültig, sobald Sie eine Bestätigungs-E-Mail von uns erhalten haben.</p>
-    </div>
+	</div>
 
     <script>
-        // Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyBzMceAxyb4HSzxtItmP0HWJoQ0D0BEers",
-            authDomain: "sofa-reservation.firebaseapp.com",
-            databaseURL: "https://sofa-reservation-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "sofa-reservation",
-            storageBucket: "sofa-reservation.appspot.com",
-            messagingSenderId: "941090818930",
-            appId: "1:941090818930:web:1e51860aafff14e130abeb",
-            measurementId: "G-L4Y4DM8S6M"
-        };
+	const firebaseConfig = {
+    apiKey: "AIzaSyBzMceAxyb4HSzxtItmP0HWJoQ0D0BEers",
+    authDomain: "sofa-reservation.firebaseapp.com",
+    databaseURL: "https://sofa-reservation-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "sofa-reservation",
+    storageBucket: "sofa-reservation.appspot.com",
+    messagingSenderId: "941090818930",
+    appId: "1:941090818930:web:1e51860aafff14e130abeb",
+    measurementId: "G-L4Y4DM8S6M"
+  };
+	const app = firebase.initializeApp(firebaseConfig);
+	const database = firebase.database();
+    const seatingArea = document.getElementById('seating-area');
+    let reservations = [];
+    let couchColors = [
+        '#8bc34a', '#444444', '#ffffff', '#FF0000', '#FF0000', '#ffffff', '#8bc34a', '#fb8c00', '#fb8c00', '#FF0000', '#444444', '#8bc34a', '#444444', '#fb8c00', '#ffffff', '#FF0000', '#fb8c00', '#FF0000', '#444444', '#ffffff', '#FF0000', '#444444', '#8bc34a', '#fb8c00', '#ffffff', '#8bc34a', '#fb8c00', '#444444', '#444444', '#fb8c00', '#FF0000', '#ffffff', '#8bc34a', '#444444', '#ffffff', '#8bc34a', '#fb8c00'
+    ];
+    let currentCouchIndex = 0;
+    let currentSeatNumber = 1;
 
-        // Initialize Firebase
-        const app = firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
+    // Function to create seats in the seating area
+    function createSeats() {
+        seatingArea.innerHTML = '';
+        const rows = [
+            [3, 2, 2, 2], // Rows and seat grouping
+            [3, 2, 2, 2],
+            [2, 2, 3, 2],
+            [2, 2, 2, 3],
+            [2, 2, 2, 3],
+            [2, 2, 2, 3],
+            [3, 2, 2, 2],
+            [2, 3, 2, 2],
+            [2, 2, 2, 3, 3]
+        ];
+        
+        const seatElements = [];
+        const rightChairElements = [];
+        const leftChairElements = [];
 
-        const seatingArea = document.getElementById('seating-area');
-        let currentSeatNumber = 1;
+        rows.forEach((groupSizes, rowIndex) => {
+            const rowDiv = document.createElement('div');
+            rowDiv.classList.add('row');
 
-        // Function to create seats in the seating area
-        function createSeats() {
-            seatingArea.innerHTML = '';
-            const rows = [
-                [3, 2, 2, 2],
-                [3, 2, 2, 2],
-                [2, 2, 3, 2],
-                [2, 2, 2, 3],
-                [2, 2, 2, 3],
-                [2, 2, 2, 3],
-                [3, 2, 2, 2],
-                [2, 3, 2, 2],
-                [2, 2, 2, 3, 3]
-            ];
+            // Add row label (Row numbers)
+            const rowNumberDiv = document.createElement('div');
+            rowNumberDiv.textContent = Row ${rowIndex + 1};
+            rowNumberDiv.style.color = 'black';
+            rowNumberDiv.style.marginRight = '20px';
+            rowDiv.appendChild(rowNumberDiv);
 
-            const seatElements = [];
+            // Add left chair (excluding topmost row)
+            if (rowIndex !== rows.length - 1) {
+                const leftChair = createChair('left');
+                rowDiv.appendChild(leftChair);
+                leftChairElements.push(leftChair);
+            }
 
-            rows.forEach((groupSizes) => {
-                const rowDiv = document.createElement('div');
-                rowDiv.classList.add('row');
-
-                groupSizes.forEach((groupSize) => {
-                    for (let i = 0; i < groupSize; i++) {
-                        const seat = document.createElement('div');
-                        seat.classList.add('seat');
-                        seat.setAttribute('data-seat-number', currentSeatNumber++);
-                        seat.textContent = currentSeatNumber - 1;
-                        seat.addEventListener('click', () => toggleSeatSelection(seat));
-                        rowDiv.appendChild(seat);
-                        seatElements.push(seat);
-                    }
-                });
-
-                seatingArea.appendChild(rowDiv);
+            // Create couch groups
+            groupSizes.forEach((groupSize) => {
+                const couchDiv = createCouch(groupSize);
+                rowDiv.appendChild(couchDiv);
+                seatElements.push(...Array.from(couchDiv.querySelectorAll('.seat')));
             });
 
-            loadReservations();
+            // Add right chair (excluding topmost row)
+            if (rowIndex !== rows.length - 1) {
+                const rightChair = createChair('right');
+                rowDiv.appendChild(rightChair);
+                rightChairElements.push(rightChair);
+            }
+
+            seatingArea.prepend(rowDiv); // Ensure bottom-to-top rendering
+        });
+
+        // Number the chairs and seats
+        let chairNumber = 1;
+        rightChairElements.forEach(chair => chair.textContent = St${chairNumber++});
+        leftChairElements.forEach(chair => chair.textContent = St${chairNumber++});
+        let seatNumber = 1;
+        seatElements.forEach(seat => seat.textContent = seatNumber++);
+        
+        loadReservations();
+    }
+
+    // Function to create a chair
+    function createChair(side) {
+        const chair = document.createElement('div');
+        chair.classList.add('seat', highlight-${side});
+        chair.setAttribute('title', 'Stuhl');
+        chair.setAttribute('data-seat-number', St${currentSeatNumber++}); 
+
+        chair.addEventListener('click', () => toggleSeatSelection(chair));
+
+        const backrest = document.createElement('div');
+        backrest.classList.add('chair-backrest');
+        chair.appendChild(backrest);
+
+        const armrestLeft = document.createElement('div');
+        armrestLeft.classList.add('chair-armrest', 'left');
+        chair.appendChild(armrestLeft);
+
+        const armrestRight = document.createElement('div');
+        armrestRight.classList.add('chair-armrest', 'right');
+        chair.appendChild(armrestRight);
+
+        return chair;
+    }
+
+    // Function to create a couch group
+    function createCouch(groupSize) {
+        const couchDiv = document.createElement('div');
+        couchDiv.classList.add('couch');
+        couchDiv.setAttribute('title', ${groupSize}er Sofa);
+
+        const backrest = document.createElement('div');
+        backrest.classList.add('couch-backrest');
+        backrest.style.backgroundColor = getCouchColor();
+        couchDiv.appendChild(backrest);
+
+        for (let i = 0; i < groupSize; i++) {
+            const seat = document.createElement('div');
+            seat.classList.add('seat');
+            seat.setAttribute('data-seat-number', currentSeatNumber++);
+            seat.style.backgroundColor = backrest.style.backgroundColor;
+            seat.addEventListener('click', () => toggleCouchSelection(couchDiv));
+            couchDiv.appendChild(seat);
         }
 
-        // Function to toggle seat selection
-        function toggleSeatSelection(seat) {
-            if (seat.classList.contains('reserved')) return;
-            seat.classList.toggle('selected');
-        }
+        const leftArmrest = document.createElement('div');
+        leftArmrest.classList.add('couch-armrest', 'left');
+        leftArmrest.style.backgroundColor = backrest.style.backgroundColor;
+        couchDiv.appendChild(leftArmrest);
 
-        // Function to save reservations in Firebase
-        function saveReservations() {
-            const reservedSeats = [];
-            document.querySelectorAll('.seat.reserved').forEach(seat => {
-                reservedSeats.push(seat.getAttribute('data-seat-number'));
-            });
+        const rightArmrest = document.createElement('div');
+        rightArmrest.classList.add('couch-armrest', 'right');
+        rightArmrest.style.backgroundColor = backrest.style.backgroundColor;
+        couchDiv.appendChild(rightArmrest);
 
-            // Save reserved seats to Firebase
-            firebase.database().ref('reservations/').set({
-                reservedSeats: reservedSeats
-            });
-        }
+        return couchDiv;
+    }
 
-        // Function to load reservations from Firebase
-        function loadReservations() {
-            firebase.database().ref('reservations/').once('value', (snapshot) => {
-                const data = snapshot.val();
-                if (data && data.reservedSeats) {
-                    data.reservedSeats.forEach(seatNumber => {
-                        const seat = document.querySelector(`.seat[data-seat-number="${seatNumber}"]`);
-                        if (seat) {
-                            seat.classList.add('reserved');
-                            seat.style.backgroundColor = '#6a1b9a';
-                        }
-                    });
+    // Function to get the color of the couch
+    function getCouchColor() {
+        const color = couchColors[currentCouchIndex % couchColors.length];
+        currentCouchIndex++;
+        return color;
+    }
+
+    // Function to toggle seat selection
+    function toggleSeatSelection(seat) {
+        if (seat.classList.contains('reserved')) return;
+        seat.classList.toggle('selected');
+        saveReservations();
+    }
+
+    // Function to toggle couch selection
+    function toggleCouchSelection(couchDiv) {
+        const seats = couchDiv.querySelectorAll('.seat');
+        const allSelected = Array.from(seats).every(seat => seat.classList.contains('selected'));
+        seats.forEach(seat => {
+            if (!seat.classList.contains('reserved')) {
+                if (allSelected) {
+                    seat.classList.remove('selected');
+                } else {
+                    seat.classList.add('selected');
+                }
+                seat.style.backgroundColor = seat.classList.contains('selected') ? 'lightblue' : seat.parentNode.querySelector('.couch-backrest').style.backgroundColor;
+            }
+        });
+        saveReservations();
+    }
+
+    // Functions to save and load reservations
+    function saveReservations() {
+    const reservedSeats = [];
+    document.querySelectorAll('.seat.reserved').forEach(seat => {
+        reservedSeats.push(seat.getAttribute('data-seat-number'));
+    });
+
+    // Daten in Firebase speichern
+    firebase.database().ref('reservations/').set({
+        reservedSeats: reservedSeats
+    });
+}
+
+    function loadReservations() {
+    firebase.database().ref('reservations/').once('value', (snapshot) => {
+        const data = snapshot.val();
+        if (data && data.reservedSeats) {
+            data.reservedSeats.forEach(seatNumber => {
+                const seat = document.querySelector(.seat[data-seat-number="${seatNumber}"]);
+                if (seat) {
+                    seat.classList.add('reserved');
+                    seat.style.backgroundColor = '#6a1b9a';
                 }
             });
         }
+    });
+}
 
-        // Handle form submission and seat reservation
-        document.getElementById('reservation-form').addEventListener('submit', function (e) {
-            e.preventDefault();
+    // Initialize seat layout on page load
+    window.onload = createSeats;
 
-            const selectedSeats = document.querySelectorAll('.seat.selected');
-            selectedSeats.forEach(seat => {
-                seat.classList.remove('selected');
-                seat.classList.add('reserved');
-                seat.style.backgroundColor = '#6a1b9a';
-            });
-
-            saveReservations(); // Save reservations after confirming
-            closeReservationForm();
-            displayConfirmation('Vielen Dank! Ihre Reservation ist bei uns eingegangen. Sobald diese eingetragen ist, erhalten Sie von uns eine Bestätigungs-Mail.');
+    // Handle form submission and seat reservation
+    document.getElementById('reservation-form').addEventListener('submit', function (e) {
+        e.preventDefault();
+        
+        const selectedSeats = document.querySelectorAll('.seat.selected');
+        selectedSeats.forEach(seat => {
+            seat.classList.remove('selected');
+            seat.classList.add('reserved');
+            seat.style.backgroundColor = '#6a1b9a';
         });
+        
+        saveReservations(); // Save reservations after confirming
+        closeReservationForm();
+        displayConfirmation('Vielen Dank! Ihre Reservation ist bei uns eingegangen. Sobald diese eingetragen ist, erhalten Sie von uns eine Bestätigungs-Mail.');
+    });
+</script>
 
-        // Initialize seat layout on page load
-        window.onload = createSeats;
-    </script>
+
+
+  
 </body>
 </html>
