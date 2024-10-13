@@ -231,7 +231,7 @@
                 <input type="text" id="phone" required>
                 <label for="mail">E-Mail:</label>
                 <input type="email" id="mail" required>
-                <button type="submit">verbindlich reservieren</button>
+                <button type="submit" onclick="submitReservation(event)">verbindlich reservieren</button>
             </form>
         </div>
     </div>
@@ -464,7 +464,7 @@
         }
 
         // Handle form submission and seat reservation
-        document.getElementById('reservation-form').addEventListener('submit', function (e) {
+        function submitReservation(e) {
             e.preventDefault();
             
             const selectedSeats = document.querySelectorAll('.seat.selected');
@@ -512,7 +512,7 @@
                 .catch((error) => {
                     displayError('Fehler beim Speichern der Reservation: ' + error.message);
                 });
-        });
+        }
         
         // Function to display confirmation message
         function displayConfirmation(message) {
